@@ -8,6 +8,62 @@ export default async function handler(req, res) {
   let description = "Najnovije nogometne vijesti";
   let image = "https://placehold.co/1200x630.jpg";
 
+  const decodeHtml = (str = "") =>
+    str
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .trim();
+
+  const stripTags = (str = "") =>
+    str.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+
+  const escapeAttr = (str = "") =>
+    String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const getMetaContent = (html, property) => {
+    const regex1 = new RegExp(
+      `<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"]+)["'][^>]*>`,
+      "i"
+    );
+    const regex2 = new RegExp(
+      `<meta[^>]+content=["']([^"]+)["'][^>]+(?:property|name)=["']${property}["'][^>]*>`,
+      "i"
+    );
+
+    const match1 = html.match(regex1);
+    if (match1?.[1]) return match1[1];
+
+    const match2 = html.match(regex2);
+    if (match2?.[1]) return match2[1];
+
+    return "";
+  };
+
+  const getTitleFromH1 = (html) => {
+    const match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+    return match ? stripTags(match[1]) : "";
+  };
+
+  const getFirstImage = (html) => {
+    const match = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+    if (!match) return "";
+
+    let src = match[1].trim();
+
+    if (!src.startsWith("http")) {
+      src = `https://nogomax-sportski-portal.lovable.app${src}`;
+    }
+
+    return src;
+  };
+
   try {
     const response = await fetch(articleUrl, {
       headers: {
@@ -17,49 +73,12 @@ export default async function handler(req, res) {
 
     const html = await response.text();
 
-    const decodeHtml = (str = "") =>
-      str
-        .replace(/&amp;/g, "&")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .trim();
-
-    const stripTags = (str = "") =>
-      str.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-
-    const escapeAttr = (str = "") =>
-      String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/"/g, "&quot;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-
-    const getMetaContent = (property) => {
-      const regex = new RegExp(
-        `<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"']+)["'][^>]*>`,
-        "i"
-      );
-      return html.match(regex)?.[1] || "";
-    };
-
-    const getTitleFromH1 = () => {
-      const match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-      return match ? stripTags(match[1]) : "";
-    };
-
-    const getFirstImage = () => {
-      const match = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
-      return match ? match[1] : "";
-    };
-
-    const ogTitle = getMetaContent("og:title");
-    const ogDescription = getMetaContent("og:description");
-    const ogImage = getMetaContent("og:image");
-    const metaDescription = getMetaContent("description");
-    const h1Title = getTitleFromH1();
-    const firstImage = getFirstImage();
+    const ogTitle = getMetaContent(html, "og:title");
+    const ogDescription = getMetaContent(html, "og:description");
+    const ogImage = getMetaContent(html, "og:image");
+    const metaDescription = getMetaContent(html, "description");
+    const h1Title = getTitleFromH1(html);
+    const firstImage = getFirstImage(html);
 
     if (ogTitle) {
       title = decodeHtml(ogTitle);
@@ -82,9 +101,9 @@ export default async function handler(req, res) {
     if (ogImage) {
       image = ogImage;
     } else if (firstImage) {
-      image = firstImage.startsWith("http")
-        ? firstImage
-        : `https://nogomax-sportski-portal.lovable.app${firstImage}`;
+      image = firstImage;
+    } else {
+      image = "https://placehold.co/1200x630.jpg";
     }
 
     res.setHeader("Content-Type", "text/html; charset=UTF-8");
@@ -100,8 +119,8 @@ export default async function handler(req, res) {
 <meta property="og:image" content="${escapeAttr(image)}" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="${escapeAttr(articleUrl)}" />
 <meta property="og:type" content="article" />
+<meta property="og:url" content="${escapeAttr(articleUrl)}" />
 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${escapeAttr(title)}" />
@@ -129,14 +148,19 @@ export default async function handler(req, res) {
 <meta property="og:image" content="https://placehold.co/1200x630.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="${articleUrl}" />
 <meta property="og:type" content="article" />
+<meta property="og:url" content="${escapeAttr(articleUrl)}" />
 
-<meta http-equiv="refresh" content="0; url=${articleUrl}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="NOGOMAX vijest" />
+<meta name="twitter:description" content="Najnovije nogometne vijesti" />
+<meta name="twitter:image" content="https://placehold.co/1200x630.jpg" />
+
+<meta http-equiv="refresh" content="0; url=${escapeAttr(articleUrl)}" />
 </head>
 <body>
 <p>Preusmjeravanje...</p>
-<a href="${articleUrl}">Otvori članak</a>
+<a href="${escapeAttr(articleUrl)}">Otvori članak</a>
 </body>
 </html>`);
   }
