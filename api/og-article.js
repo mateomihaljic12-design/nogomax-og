@@ -3,9 +3,9 @@ export default function handler(req, res) {
 
   const articleUrl = `https://nogomax-sportski-portal.lovable.app/clanak/${slug}`;
 
-  const title = "NOGOMAX vijest";
-  const description = "Najnovije nogometne vijesti";
-  const image = "https://placehold.co/1200x630.jpg";
+  const title = "Trener Reala bijesan nakon ispadanja: Ovakve odluke ne smiju odlučivati utakmicu";
+const description = "Burne reakcije nakon ispadanja Reala iz Lige prvaka. Trener Madriđana žestoko je kritizirao sporne odluke koje su, po njegovom mišljenju, usmjerile utakmicu.";
+const image = "OVDJE_STAVI_PRAVI_LINK_SLIKE";
 
   res.setHeader("Content-Type", "text/html; charset=UTF-8");
 
