@@ -5,7 +5,7 @@ export default function handler(req, res) {
 
   const title = "NOGOMAX vijest";
   const description = "Najnovije nogometne vijesti";
-  const image = "https://upload.wikimedia.org/wikipedia/commons/8/8c/Kylian_Mbapp%C3%A9_2022.jpg";
+  const image = "https://images.unsplash.com/photo-1508098682722-e99c43a406b2";
 
   res.setHeader("Content-Type", "text/html; charset=UTF-8");
 
